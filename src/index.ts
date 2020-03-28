@@ -10,22 +10,13 @@ import {
 import dotenv from "dotenv";
 import { Request } from "express";
 import { anonymizeKey } from './util/anonymize-key';
-import { getOAuth2RedirectUrl, getTokens, getZohoContacts } from "./util/zoho";
+import { getOAuth2RedirectUrl, getTokens, getZohoContacts, updateZohoContact } from "./util/zoho";
 
 dotenv.config();
 
 class ZohoAdapter implements Adapter {
   public async getContacts(config: Config): Promise<Contact[]> {
-    const apiKey = config.apiKey;
-    if (!apiKey) {
-      throw new ServerError(400, 'No server key provided');
-    }
-
-    const apiUrl = config.apiUrl;
-    if (!apiUrl) {
-      throw new ServerError(400, 'No server url provided');
-    }
-
+    const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
     try {
       return await getZohoContacts(apiKey, apiUrl);
     } catch (error) {
@@ -40,9 +31,15 @@ class ZohoAdapter implements Adapter {
     throw new Error("Not Implemented");
   };
 
-  // TODO
   public async updateContact(config: Config, id: string, contact: ContactUpdate): Promise<Contact> {
-    throw new Error("Not Implemented");
+    const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
+    try {
+      return await updateZohoContact(apiKey, apiUrl, id, contact);
+    } catch (error) {
+      // tslint:disable-next-line:no-console
+      console.error(`Could not update contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
+      throw new ServerError(500, "Could not update contact");
+    }
   };
 
   // TODO
@@ -74,6 +71,24 @@ class ZohoAdapter implements Adapter {
       apiKey: `${access_token}:${refresh_token}`,
       apiUrl: accountsServer
     };
+  }
+
+  /**
+   * validates required config parameters and throws errors
+   * @param {Config} config
+   * @throws
+   */
+  private validateAndReturnRequiredConfigKeys(config: Config): {apiKey: string, apiUrl: string} {
+    const apiKey = config.apiKey;
+    if (!apiKey) {
+      throw new ServerError(400, 'No server key provided');
+    }
+
+    const apiUrl = config.apiUrl;
+    if (!apiUrl) {
+      throw new ServerError(400, 'No server url provided');
+    }
+    return { apiKey, apiUrl };
   }
 
 }

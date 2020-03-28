@@ -40,9 +40,13 @@ function collectPhoneNumbersFromZohoContact(zohoContact: IZohoContact): PhoneNum
     return phoneNumbers;
 }
 
-export function convertContactToZohoContact(contact: ContactUpdate | ContactTemplate): IZohoContact {
+export function convertContactToZohoContact(contact: ContactUpdate | ContactTemplate, id?: string): IZohoContact {
     const zohoContact: IZohoContact = {
     };
+
+    if (id) {
+        zohoContact.id = id;
+    }
 
     if (contact.firstName) {
         zohoContact.First_Name = contact.firstName;
@@ -59,23 +63,25 @@ export function convertContactToZohoContact(contact: ContactUpdate | ContactTemp
         // TODO: find appropriate field
     }
 
-    contact.phoneNumbers.forEach((entry: PhoneNumber) => {
-        if (entry.label === PhoneNumberLabel.HOME) {
-            zohoContact.Home_Phone = entry.phoneNumber;
-        }
-        if (entry.label === PhoneNumberLabel.WORK) {
-            zohoContact.Phone = entry.phoneNumber;
-        }
-        if (entry.label === PhoneNumberLabel.MOBILE) {
-            zohoContact.Mobile = entry.phoneNumber;
-        }
-        if (entry.label === "FAX" as PhoneNumberLabel) {
-            zohoContact.Fax = entry.phoneNumber;
-        }
-        if (entry.label === "OTHER" as PhoneNumberLabel) {
-            zohoContact.Other_Phone = entry.phoneNumber;
-        }
-    });
+    if (Array.isArray(contact.phoneNumbers)) {
+        contact.phoneNumbers.forEach((entry: PhoneNumber) => {
+            if (entry.label === PhoneNumberLabel.HOME) {
+                zohoContact.Home_Phone = entry.phoneNumber;
+            }
+            if (entry.label === PhoneNumberLabel.WORK) {
+                zohoContact.Phone = entry.phoneNumber;
+            }
+            if (entry.label === PhoneNumberLabel.MOBILE) {
+                zohoContact.Mobile = entry.phoneNumber;
+            }
+            if (entry.label === "FAX" as PhoneNumberLabel) {
+                zohoContact.Fax = entry.phoneNumber;
+            }
+            if (entry.label === "OTHER" as PhoneNumberLabel) {
+                zohoContact.Other_Phone = entry.phoneNumber;
+            }
+        });
+    }
 
     return zohoContact;
 }

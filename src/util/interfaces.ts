@@ -71,12 +71,37 @@ export interface IZohoContact {
     Fax?: string // Fax number of the Contact
 }
 
+interface IZohoUpdate {
+    code: string,
+    status: string,
+    details: any,
+    message: string
+}
+
 export interface IZohoContactsResponse {
-    data: [IZohoContact],
+    data: IZohoContact[],
     info: {
         per_page: number,
         count: number,
         page: number,
         more_records: boolean
     },
+}
+
+export interface IZohoUpdateResponse {
+    data: IZohoUpdate[],
+}
+
+export enum RequestMethods {
+    GET = 'GET',
+    POST = 'POST',
+    PUT = 'PUT',
+    DELETE = 'DELETE',
+}
+
+export interface IRequest {
+    url: string,
+    method: RequestMethods,
+    headers?: { [ key: string ]: any }
+    qs?: { [ key: string ]: any }
 }
