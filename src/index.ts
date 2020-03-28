@@ -10,7 +10,7 @@ import {
 import dotenv from "dotenv";
 import { Request } from "express";
 import { anonymizeKey } from './util/anonymize-key';
-import { getOAuth2RedirectUrl, getTokens, getZohoContacts, updateZohoContact } from "./util/zoho";
+import { getOAuth2RedirectUrl, getTokens, getZohoContacts, upsertZohoContact } from "./util/zoho";
 
 dotenv.config();
 
@@ -26,15 +26,21 @@ class ZohoAdapter implements Adapter {
     }
   }
 
-  // TODO
   public async createContact(config: Config, contact: ContactTemplate): Promise<Contact> {
-    throw new Error("Not Implemented");
+    const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
+    try {
+      return await upsertZohoContact(apiKey, apiUrl, contact);
+    } catch (error) {
+      // tslint:disable-next-line:no-console
+      console.error(`Could not create contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
+      throw new ServerError(500, "Could not create contact");
+    }
   };
 
   public async updateContact(config: Config, id: string, contact: ContactUpdate): Promise<Contact> {
     const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
     try {
-      return await updateZohoContact(apiKey, apiUrl, id, contact);
+      return await upsertZohoContact(apiKey, apiUrl, contact);
     } catch (error) {
       // tslint:disable-next-line:no-console
       console.error(`Could not update contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);

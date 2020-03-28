@@ -1,4 +1,4 @@
-import { Contact, ContactTemplate } from '@clinq/bridge';
+import { Contact, ContactTemplate, ContactUpdate } from '@clinq/bridge';
 import querystring from 'querystring';
 import request from 'request';
 import { convertContactToZohoContact, convertZohoContactToContact } from './contact';
@@ -45,6 +45,46 @@ function makeRequest(options: IRequest, token?: string): Promise<IZohoContactsRe
     });
 }
 
+export async function upsertZohoContact(
+    apiKey: string,
+    apiUrl: string,
+    contact: ContactUpdate | ContactTemplate
+): Promise<Contact> {
+    const { accessToken, apiDomain } = await authorizeApiKey(apiKey, apiUrl);
+
+    const id = (contact as ContactUpdate).id;
+
+    const zohoContact = convertContactToZohoContact(contact, id);
+
+    const reqUpdateOptions = {
+        url: `${apiDomain}/crm/v2/Contacts`,
+        method: id ? RequestMethods.PUT : RequestMethods.POST,
+        body: { data: [zohoContact] }
+    };
+    const response = await makeRequest(reqUpdateOptions, accessToken);
+
+    if (!response || !isZohoUpdateResponse(response) || response.data.length !== 1) {
+        throw new Error("Received unexpected response from Zoho");
+    }
+
+    const [updateEntry] = response.data;
+    if (updateEntry.code !== 'SUCCESS') {
+        throw new Error(`Could not update Zoho contact: ${updateEntry.message}`);
+    }
+
+    const reqGetOptions = {
+        url: `${apiDomain}/crm/v2/Contacts/${updateEntry.details.id}`,
+        method: RequestMethods.GET,
+    };
+    const responseGet = await makeRequest(reqGetOptions, accessToken);
+
+    const receivedContact = convertZohoContactToContact((responseGet as IZohoContactsResponse).data[ 0 ]);
+    if (!receivedContact) {
+        throw new Error("Could not parse received contact");
+    }
+    return receivedContact;
+}
+
 export async function getZohoContacts(
     apiKey: string,
     apiUrl: string,
@@ -74,43 +114,6 @@ export async function getZohoContacts(
     }
 
     return contacts;
-}
-
-export async function updateZohoContact(
-    apiKey: string,
-    apiUrl: string,
-    id: string,
-    contact: ContactTemplate
-): Promise<Contact> {
-    const { accessToken, apiDomain } = await authorizeApiKey(apiKey, apiUrl);
-
-    const zohoContact = convertContactToZohoContact(contact, id);
-
-    const reqUpdateOptions = {
-        url: `${apiDomain}/crm/v2/Contacts`,
-        method: RequestMethods.PUT,
-        body: { data: [zohoContact] }
-    };
-    const response = await makeRequest(reqUpdateOptions, accessToken);
-    if (!response || !isZohoUpdateResponse(response) || response.data.length !== 1) {
-        throw new Error("Received unexpected response from Zoho");
-    }
-
-    if (response.data[ 0 ].code !== 'SUCCESS') {
-        throw new Error(`Could not update Zoho contact: ${response.data[ 0 ].message}`);
-    }
-
-    const reqGetOptions = {
-        url: `${apiDomain}/crm/v2/Contacts/${id}`,
-        method: RequestMethods.GET,
-    };
-    const responseGet = await makeRequest(reqGetOptions, accessToken);
-
-    const receivedContact = convertZohoContactToContact((responseGet as IZohoContactsResponse).data[ 0 ]);
-    if (!receivedContact) {
-        throw new Error("Could not parse received contact");
-    }
-    return receivedContact;
 }
 
 export function getTokens(code: string, accountServer: string): Promise<IZohoAuthResponse> {
