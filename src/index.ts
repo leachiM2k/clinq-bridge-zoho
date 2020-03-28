@@ -10,7 +10,7 @@ import {
 import dotenv from "dotenv";
 import { Request } from "express";
 import { anonymizeKey } from './util/anonymize-key';
-import { getOAuth2RedirectUrl, getTokens, getZohoContacts, upsertZohoContact } from "./util/zoho";
+import { deleteZohoContact, getOAuth2RedirectUrl, getTokens, getZohoContacts, upsertZohoContact } from "./util/zoho";
 
 dotenv.config();
 
@@ -29,7 +29,7 @@ class ZohoAdapter implements Adapter {
   public async createContact(config: Config, contact: ContactTemplate): Promise<Contact> {
     const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
     try {
-      return await upsertZohoContact(apiKey, apiUrl, contact);
+      return upsertZohoContact(apiKey, apiUrl, contact);
     } catch (error) {
       // tslint:disable-next-line:no-console
       console.error(`Could not create contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
@@ -40,7 +40,7 @@ class ZohoAdapter implements Adapter {
   public async updateContact(config: Config, id: string, contact: ContactUpdate): Promise<Contact> {
     const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
     try {
-      return await upsertZohoContact(apiKey, apiUrl, contact);
+      return upsertZohoContact(apiKey, apiUrl, contact);
     } catch (error) {
       // tslint:disable-next-line:no-console
       console.error(`Could not update contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
@@ -48,9 +48,15 @@ class ZohoAdapter implements Adapter {
     }
   };
 
-  // TODO
   public async deleteContact(config: Config, id: string): Promise<void> {
-    throw new Error("Not Implemented");
+    const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
+    try {
+      return deleteZohoContact(apiKey, apiUrl, id);
+    } catch (error) {
+      // tslint:disable-next-line:no-console
+      console.error(`Could not update contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
+      throw new ServerError(500, "Could not update contact");
+    }
   };
 
   /**
