@@ -46,11 +46,18 @@ export async function upsertZohoContact(
 
 export async function getZohoContacts(
     apiKey: string,
-    apiUrl: string,
+    apiUrl: string
+): Promise<Contact[]> {
+    const { accessToken, apiDomain } = await authorizeApiKey(apiKey, apiUrl);
+    return getPaginatedZohoContacts(accessToken, apiDomain);
+}
+
+async function getPaginatedZohoContacts(
+    accessToken: string,
+    apiDomain: string,
     page: number = 1,
     previousContacts?: Contact[]
 ): Promise<Contact[]> {
-    const { accessToken, apiDomain } = await authorizeApiKey(apiKey, apiUrl);
     const reqOptions = { url: `${apiDomain}/crm/v2/Contacts`, method: RequestMethods.GET, qs: { page } };
     const response = await makeRequest(reqOptions, accessToken);
 
@@ -69,7 +76,7 @@ export async function getZohoContacts(
     }
 
     if (response.info.more_records) {
-        return getZohoContacts(apiKey, apiUrl, page + 1, contacts);
+        return getPaginatedZohoContacts(accessToken, apiDomain, page + 1, contacts);
     }
 
     return contacts;
