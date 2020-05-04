@@ -1,6 +1,5 @@
 {
   "name": "clinq-bridge-zoho",
-  "version": "1.0.0",
   "private": true,
   "description": "CLINQ-Bridge for ZOHO CRM Contacts",
   "main": "dist/index.js",
@@ -32,7 +31,7 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "request": "^2.88.2",
-    "typescript": "^3.5.1"
+    "typescript": "^3.8.3"
   },
   "devDependencies": {
     "@types/request": "^2.48.4",
@@ -50,7 +49,7 @@
     }
   },
   "lint-staged": {
-    "*.{ts}": [
+    "*.ts": [
       "prettier --write",
       "tslint",
       "git add"
