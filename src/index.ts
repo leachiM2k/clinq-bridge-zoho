@@ -9,8 +9,14 @@ import {
 } from "@clinq/bridge";
 import dotenv from "dotenv";
 import { Request } from "express";
-import { anonymizeKey } from './util/anonymize-key';
-import { deleteZohoContact, getOAuth2RedirectUrl, getTokens, getZohoContacts, upsertZohoContact } from "./util/zoho";
+import { anonymizeKey } from "./util/anonymize-key";
+import {
+  deleteZohoContact,
+  getOAuth2RedirectUrl,
+  getTokens,
+  getZohoContacts,
+  upsertZohoContact
+} from "./util/zoho";
 
 dotenv.config();
 
@@ -21,32 +27,50 @@ class ZohoAdapter implements Adapter {
       return await getZohoContacts(apiKey, apiUrl);
     } catch (error) {
       // tslint:disable-next-line:no-console
-      console.error(`Could not get contacts for key "${anonymizeKey(apiKey)}"`, error.message);
+      console.error(
+        `Could not get contacts for key "${anonymizeKey(apiKey)}"`,
+        error.message
+      );
       throw new ServerError(401, "Unauthorized");
     }
   }
 
-  public async createContact(config: Config, contact: ContactTemplate): Promise<Contact> {
+  public async createContact(
+    config: Config,
+    contact: ContactTemplate
+  ): Promise<Contact> {
     const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
     try {
       return upsertZohoContact(apiKey, apiUrl, contact);
     } catch (error) {
       // tslint:disable-next-line:no-console
-      console.error(`Could not create contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
+      console.error(
+        `Could not create contact for key "${anonymizeKey(apiKey)}: ${
+          error.message
+        }"`
+      );
       throw new ServerError(500, "Could not create contact");
     }
-  };
+  }
 
-  public async updateContact(config: Config, id: string, contact: ContactUpdate): Promise<Contact> {
+  public async updateContact(
+    config: Config,
+    id: string,
+    contact: ContactUpdate
+  ): Promise<Contact> {
     const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
     try {
       return upsertZohoContact(apiKey, apiUrl, contact);
     } catch (error) {
       // tslint:disable-next-line:no-console
-      console.error(`Could not update contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
+      console.error(
+        `Could not update contact for key "${anonymizeKey(apiKey)}: ${
+          error.message
+        }"`
+      );
       throw new ServerError(500, "Could not update contact");
     }
-  };
+  }
 
   public async deleteContact(config: Config, id: string): Promise<void> {
     const { apiKey, apiUrl } = this.validateAndReturnRequiredConfigKeys(config);
@@ -54,10 +78,14 @@ class ZohoAdapter implements Adapter {
       return deleteZohoContact(apiKey, apiUrl, id);
     } catch (error) {
       // tslint:disable-next-line:no-console
-      console.error(`Could not update contact for key "${anonymizeKey(apiKey)}: ${error.message}"`);
+      console.error(
+        `Could not update contact for key "${anonymizeKey(apiKey)}: ${
+          error.message
+        }"`
+      );
       throw new ServerError(500, "Could not update contact");
     }
-  };
+  }
 
   /**
    * REQUIRED FOR OAUTH2 FLOW
@@ -72,13 +100,23 @@ class ZohoAdapter implements Adapter {
    * REQUIRED FOR OAUTH2 FLOW
    * Users will be redirected here after authorizing CLINQ.
    */
-  public async handleOAuth2Callback(req: Request): Promise<{ apiKey: string; apiUrl: string }> {
+  public async handleOAuth2Callback(
+    req: Request
+  ): Promise<{ apiKey: string; apiUrl: string }> {
     if (req.query.error) {
-      throw new Error('Access denied to ZOHO CRM');
+      throw new Error("Access denied to ZOHO CRM");
     }
 
-    const { code, 'accounts-server': accountsServer } = req.query;
-    const { access_token, refresh_token } = await getTokens(code, accountsServer);
+    const { code, "accounts-server": accountsServer } = req.query;
+
+    if (typeof code !== "string" || typeof accountsServer !== "string") {
+      throw new Error("Invalid code");
+    }
+
+    const { access_token, refresh_token } = await getTokens(
+      code,
+      accountsServer
+    );
     return {
       apiKey: `${access_token}:${refresh_token}`,
       apiUrl: accountsServer
@@ -90,19 +128,20 @@ class ZohoAdapter implements Adapter {
    * @param {Config} config
    * @throws
    */
-  private validateAndReturnRequiredConfigKeys(config: Config): {apiKey: string, apiUrl: string} {
+  private validateAndReturnRequiredConfigKeys(
+    config: Config
+  ): { apiKey: string; apiUrl: string } {
     const apiKey = config.apiKey;
     if (!apiKey) {
-      throw new ServerError(400, 'No server key provided');
+      throw new ServerError(400, "No server key provided");
     }
 
     const apiUrl = config.apiUrl;
     if (!apiUrl) {
-      throw new ServerError(400, 'No server url provided');
+      throw new ServerError(400, "No server url provided");
     }
     return { apiKey, apiUrl };
   }
-
 }
 
 start(new ZohoAdapter());
