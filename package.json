@@ -38,7 +38,7 @@
     "@types/humanparser": "^1.1.1",
     "@types/request": "^2.48.4",
     "husky": "^2.4.0",
-    "lint-staged": "^8.2.0",
+    "lint-staged": "^13.1.0",
     "prettier": "^1.18.2",
     "ts-node-dev": "^1.0.0-pre.39",
     "tslint": "^5.17.0",
